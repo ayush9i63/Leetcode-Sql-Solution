@@ -1,0 +1,15 @@
+ Intuition
+ Simple Select Statement
+
+Approach
+Use the `WHERE` keyword to filter results.
+ Complexity
+- **Time Complexity**: O(n)
+- **Space Complexity**: O(1)
+
+ Code
+```sql
+SELECT product_id 
+FROM Products 
+WHERE low_fats = 'Y' AND recyclable = 'Y';
+Link : https://leetcode.com/problems/recyclable-and-low-fat-products/solutions/5872283/1757-recyclable-and-low-fat-products-leetcode
