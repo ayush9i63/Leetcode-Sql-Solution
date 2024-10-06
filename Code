@@ -1,0 +1,310 @@
+# Importing required libraries
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report, roc_curve, roc_auc_score
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, StackingClassifier, AdaBoostClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.svm import SVC
+from xgboost import XGBClassifier
+
+# 1. Load dataset and preprocess
+df = pd.read_csv('train.csv')
+df.dropna(subset=['question1', 'question2'], inplace=True)
+
+# Feature Engineering - TF-IDF for both questions
+tfidf = TfidfVectorizer(max_features=1000, stop_words='english')
+q1_tfidf = tfidf.fit_transform(df['question1'])
+q2_tfidf = tfidf.fit_transform(df['question2'])
+
+df['q1_tfidf_mean'] = q1_tfidf.mean(axis=1)
+df['q2_tfidf_mean'] = q2_tfidf.mean(axis=1)
+
+# Select sample of 40,000
+df_sample = df.sample(40000, random_state=42)
+X = df_sample[['q1_tfidf_mean', 'q2_tfidf_mean']]
+y = df_sample['is_duplicate']
+
+# Standardize features
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# Split data into train/test sets
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
+
+# 2. Logistic Regression
+print("----- Logistic Regression -----")
+logreg = LogisticRegression()
+logreg.fit(X_train, y_train)
+y_pred_logreg = logreg.predict(X_test)
+
+# Accuracy
+accuracy_logreg = accuracy_score(y_test, y_pred_logreg)
+print(f"Logistic Regression Accuracy: {accuracy_logreg:.4f}")
+
+# Confusion Matrix
+cm_logreg = confusion_matrix(y_test, y_pred_logreg)
+sns.heatmap(cm_logreg, annot=True, fmt="d", cmap="Blues")
+plt.title("Logistic Regression Confusion Matrix")
+plt.show()
+
+# Classification Report
+print(classification_report(y_test, y_pred_logreg))
+
+# ROC Curve
+y_prob_logreg = logreg.predict_proba(X_test)[:, 1]
+fpr_logreg, tpr_logreg, _ = roc_curve(y_test, y_prob_logreg)
+roc_auc_logreg = roc_auc_score(y_test, y_prob_logreg)
+
+plt.plot(fpr_logreg, tpr_logreg, label=f'Logistic Regression ROC (AUC = {roc_auc_logreg:.2f})')
+plt.plot([0,1], [0,1], 'k--')
+plt.title('Logistic Regression ROC Curve')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.legend(loc='best')
+plt.show()
+
+# 3. Random Forest
+print("----- Random Forest -----")
+rf = RandomForestClassifier(n_estimators=100, random_state=42)
+rf.fit(X_train, y_train)
+y_pred_rf = rf.predict(X_test)
+
+# Accuracy
+accuracy_rf = accuracy_score(y_test, y_pred_rf)
+print(f"Random Forest Accuracy: {accuracy_rf:.4f}")
+
+# Confusion Matrix
+cm_rf = confusion_matrix(y_test, y_pred_rf)
+sns.heatmap(cm_rf, annot=True, fmt="d", cmap="Blues")
+plt.title("Random Forest Confusion Matrix")
+plt.show()
+
+# Classification Report
+print(classification_report(y_test, y_pred_rf))
+
+# ROC Curve
+y_prob_rf = rf.predict_proba(X_test)[:, 1]
+fpr_rf, tpr_rf, _ = roc_curve(y_test, y_prob_rf)
+roc_auc_rf = roc_auc_score(y_test, y_prob_rf)
+
+plt.plot(fpr_rf, tpr_rf, label=f'Random Forest ROC (AUC = {roc_auc_rf:.2f})')
+plt.plot([0,1], [0,1], 'k--')
+plt.title('Random Forest ROC Curve')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.legend(loc='best')
+plt.show()
+
+# 4. Support Vector Machine (SVM)
+print("----- SVM -----")
+svm = SVC(probability=True)
+svm.fit(X_train, y_train)
+y_pred_svm = svm.predict(X_test)
+
+# Accuracy
+accuracy_svm = accuracy_score(y_test, y_pred_svm)
+print(f"SVM Accuracy: {accuracy_svm:.4f}")
+
+# Confusion Matrix
+cm_svm = confusion_matrix(y_test, y_pred_svm)
+sns.heatmap(cm_svm, annot=True, fmt="d", cmap="Blues")
+plt.title("SVM Confusion Matrix")
+plt.show()
+
+# Classification Report
+print(classification_report(y_test, y_pred_svm))
+
+# ROC Curve
+y_prob_svm = svm.predict_proba(X_test)[:, 1]
+fpr_svm, tpr_svm, _ = roc_curve(y_test, y_prob_svm)
+roc_auc_svm = roc_auc_score(y_test, y_prob_svm)
+
+plt.plot(fpr_svm, tpr_svm, label=f'SVM ROC (AUC = {roc_auc_svm:.2f})')
+plt.plot([0,1], [0,1], 'k--')
+plt.title('SVM ROC Curve')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.legend(loc='best')
+plt.show()
+
+# 5. Gradient Boosting
+print("----- Gradient Boosting -----")
+gb = GradientBoostingClassifier()
+gb.fit(X_train, y_train)
+y_pred_gb = gb.predict(X_test)
+
+# Accuracy
+accuracy_gb = accuracy_score(y_test, y_pred_gb)
+print(f"Gradient Boosting Accuracy: {accuracy_gb:.4f}")
+
+# Confusion Matrix
+cm_gb = confusion_matrix(y_test, y_pred_gb)
+sns.heatmap(cm_gb, annot=True, fmt="d", cmap="Blues")
+plt.title("Gradient Boosting Confusion Matrix")
+plt.show()
+
+# Classification Report
+print(classification_report(y_test, y_pred_gb))
+
+# ROC Curve
+y_prob_gb = gb.predict_proba(X_test)[:, 1]
+fpr_gb, tpr_gb, _ = roc_curve(y_test, y_prob_gb)
+roc_auc_gb = roc_auc_score(y_test, y_prob_gb)
+
+plt.plot(fpr_gb, tpr_gb, label=f'Gradient Boosting ROC (AUC = {roc_auc_gb:.2f})')
+plt.plot([0,1], [0,1], 'k--')
+plt.title('Gradient Boosting ROC Curve')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.legend(loc='best')
+plt.show()
+
+# 6. Decision Tree
+print("----- Decision Tree -----")
+dt = DecisionTreeClassifier(random_state=42)
+dt.fit(X_train, y_train)
+y_pred_dt = dt.predict(X_test)
+
+# Accuracy
+accuracy_dt = accuracy_score(y_test, y_pred_dt)
+print(f"Decision Tree Accuracy: {accuracy_dt:.4f}")
+
+# Confusion Matrix
+cm_dt = confusion_matrix(y_test, y_pred_dt)
+sns.heatmap(cm_dt, annot=True, fmt="d", cmap="Blues")
+plt.title("Decision Tree Confusion Matrix")
+plt.show()
+
+# Classification Report
+print(classification_report(y_test, y_pred_dt))
+
+# ROC Curve
+y_prob_dt = dt.predict_proba(X_test)[:, 1]
+fpr_dt, tpr_dt, _ = roc_curve(y_test, y_prob_dt)
+roc_auc_dt = roc_auc_score(y_test, y_prob_dt)
+
+plt.plot(fpr_dt, tpr_dt, label=f'Decision Tree ROC (AUC = {roc_auc_dt:.2f})')
+plt.plot([0,1], [0,1], 'k--')
+plt.title('Decision Tree ROC Curve')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.legend(loc='best')
+plt.show()
+
+# 7. Stacking Classifier
+print("----- Stacking Classifier -----")
+estimators = [
+    ('logreg', LogisticRegression()),
+    ('rf', RandomForestClassifier()),
+    ('svm', SVC(probability=True)),
+    ('gb', GradientBoostingClassifier())
+]
+stacked_model = StackingClassifier(estimators=estimators, final_estimator=LogisticRegression())
+stacked_model.fit(X_train, y_train)
+y_pred_stacked = stacked_model.predict(X_test)
+
+# Accuracy
+accuracy_stacked = accuracy_score(y_test, y_pred_stacked)
+print(f"Stacking Classifier Accuracy: {accuracy_stacked:.4f}")
+
+# Confusion Matrix
+cm_stacked = confusion_matrix(y_test, y_pred_stacked)
+sns.heatmap(cm_stacked, annot=True, fmt="d", cmap="Blues")
+plt.title("Stacking Classifier Confusion Matrix")
+plt.show()
+
+# Classification Report
+print(classification_report(y_test, y_pred_stacked))
+
+# ROC Curve
+y_prob_stacked = stacked_model.predict_proba(X_test)[:, 1]
+fpr_stacked, tpr_stacked, _ = roc_curve(y_test, y_prob_stacked)
+roc_auc_stacked = roc_auc_score(y_test, y_prob_stacked)
+
+plt.plot(fpr_stacked, tpr_stacked, label=f'Stacking Classifier ROC (AUC = {roc_auc_stacked:.2f})')
+plt.plot([0,1], [0,1], 'k--')
+plt.title('Stacking Classifier ROC Curve')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.legend(loc='best')
+plt.show()
+
+# 8. Compare Performance
+model_names = ['Logistic Regression', 'Random Forest', 'SVM', 'Gradient Boosting', 'Decision Tree', 'Stacking']
+accuracies = [accuracy_logreg, accuracy_rf, accuracy_svm, accuracy_gb, accuracy_dt, accuracy_stacked]
+
+plt.barh(model_names, accuracies, color='blue')
+plt.xlabel('Accuracy')
+plt.title('Model Accuracy Comparison')
+plt.show()
+
+# 9. Conclusion
+best_model_index = np.argmax(accuracies)
+best_model_name = model_names[best_model_index]
+best_accuracy = accuracies[best_model_index]
+print(f"The best-performing model is: {best_model_name} with an accuracy of {best_accuracy:.4f}.")
+
+# 10. Load and preprocess the test dataset
+test_df = pd.read_csv('test.csv')
+test_df.dropna(subset=['question1', 'question2'], inplace=True)
+
+# Feature Engineering - TF-IDF for both questions
+test_q1_tfidf = tfidf.transform(test_df['question1'])
+test_q2_tfidf = tfidf.transform(test_df['question2'])
+
+test_df['q1_tfidf_mean'] = test_q1_tfidf.mean(axis=1)
+test_df['q2_tfidf_mean'] = test_q2_tfidf.mean(axis=1)
+
+# Prepare the test data
+X_test_final = test_df[['q1_tfidf_mean', 'q2_tfidf_mean']]
+X_test_final_scaled = scaler.transform(X_test_final)
+
+# 11. Use the best model to predict on the test dataset
+if best_model_name == 'Logistic Regression':
+    final_model = logreg
+elif best_model_name == 'Random Forest':
+    final_model = rf
+elif best_model_name == 'SVM':
+    final_model = svm
+elif best_model_name == 'Gradient Boosting':
+    final_model = gb
+elif best_model_name == 'Decision Tree':
+    final_model = dt
+elif best_model_name == 'Stacking':
+    final_model = stacked_model
+
+# Predictions on the test dataset
+y_test_pred = final_model.predict(X_test_final_scaled)
+y_test_prob = final_model.predict_proba(X_test_final_scaled)[:, 1]
+
+# 12. Evaluate final model on test dataset
+accuracy_test = accuracy_score(test_df['is_duplicate'], y_test_pred)
+roc_auc_test = roc_auc_score(test_df['is_duplicate'], y_test_prob)
+
+print(f"Final Model Test Accuracy: {accuracy_test:.4f}")
+print(f"Final Model Test ROC AUC: {roc_auc_test:.4f}")
+
+# Confusion Matrix for the final model
+cm_final = confusion_matrix(test_df['is_duplicate'], y_test_pred)
+sns.heatmap(cm_final, annot=True, fmt="d", cmap="Blues")
+plt.title("Final Model Confusion Matrix")
+plt.show()
+
+# Final Classification Report
+print(classification_report(test_df['is_duplicate'], y_test_pred))
+
+# Final ROC Curve
+fpr_final, tpr_final, _ = roc_curve(test_df['is_duplicate'], y_test_prob)
+plt.plot(fpr_final, tpr_final, label=f'Final Model ROC (AUC = {roc_auc_test:.2f})')
+plt.plot([0,1], [0,1], 'k--')
+plt.title('Final Model ROC Curve on Test Dataset')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.legend(loc='best')
+plt.show()
